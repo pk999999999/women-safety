@@ -1,0 +1,1 @@
+{"error":{"message":"Audio duration exceeds the maximum limit of 30 seconds. Please use the batch API for longer audio files.","code":"invalid_request_error","request_id":"20260328_956312d3-0c72-4ddc-af2a-c623c3098ff8"}}
