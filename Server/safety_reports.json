@@ -1,0 +1,34 @@
+{
+  "reports": [
+    {
+      "id": "demo-1",
+      "category": "poor-lighting",
+      "locality": "Near Sitabuldi flyover footpath",
+      "description": "Street lights stay off after 9pm. Several people reported being followed here.",
+      "lat": 21.14,
+      "lng": 79.08,
+      "exact": false,
+      "createdAt": "2026-09-12T10:00:00.000Z"
+    },
+    {
+      "id": "demo-2",
+      "category": "isolated-stretch",
+      "locality": "Ambazari lake inner path",
+      "description": "Isolated walking stretch with few people after dusk.",
+      "lat": 21.14,
+      "lng": 79.05,
+      "exact": false,
+      "createdAt": "2026-09-28T18:20:00.000Z"
+    },
+    {
+      "id": "demo-3",
+      "category": "school-route",
+      "locality": "Hingna road near school gate",
+      "description": "No crossing volunteer and speeding two-wheelers during school closing time.",
+      "lat": 21.11,
+      "lng": 79.01,
+      "exact": false,
+      "createdAt": "2026-10-02T08:15:00.000Z"
+    }
+  ]
+}
