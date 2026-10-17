@@ -1,0 +1,55 @@
+{
+  "trackingId": null,
+  "userName": "Local User",
+  "userPhone": "9324396434",
+  "location": {
+    "lat": 21.005173356764335,
+    "lng": 79.04740845487991,
+    "time": 1774744245113
+  },
+  "transcript": null,
+  "severity": null,
+  "detectedLanguage": null,
+  "recordingDuration": 480151,
+  "resolvedAt": "2026-03-29T00:39:03.102Z",
+  "resolveReason": "Recording time limit reached (8 min)",
+  "stateHistory": [
+    {
+      "state": "IDLE",
+      "timestamp": 1774744218767,
+      "reason": "Agent initialized"
+    },
+    {
+      "state": "MONITORING",
+      "timestamp": 1774744248576,
+      "reason": "Route started / monitoring activated",
+      "edge": "Route started / Sarthi activated"
+    },
+    {
+      "state": "EMERGENCY_PROTOCOL",
+      "timestamp": 1774744260378,
+      "reason": "Intercept timer expired — ESCALATING",
+      "edge": "Unknown transition"
+    },
+    {
+      "state": "IDLE",
+      "timestamp": 1774744262238,
+      "reason": "Route ended / monitoring stopped",
+      "edge": "Unknown transition"
+    },
+    {
+      "state": "RECORDING",
+      "timestamp": 1774744262951,
+      "reason": "Evidence capture started",
+      "edge": "Unknown transition"
+    },
+    {
+      "state": "RESOLVED",
+      "timestamp": 1774744743091,
+      "reason": "Recording time limit reached (8 min)",
+      "edge": "8min elapsed OR \"Safety Confirmed\""
+    }
+  ],
+  "type": "emergency_metadata",
+  "createdAt": "2026-03-29T00:39:03.124Z"
+}

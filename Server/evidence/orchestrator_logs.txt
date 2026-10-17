@@ -1,0 +1,3 @@
+[2026-03-28T21:58:58.294Z] User: Local User | LatLng: 21.00534,79.04705 | Transcript: "Help me."
+[2026-03-28T21:59:13.766Z] User: Local User | LatLng: 21.005184339193832,79.04737643580003 | Transcript: "Help me."
+[2026-03-28T21:59:40.366Z] User: Local User | LatLng: 21.005184339193832,79.04737643580003 | Transcript: "Help me."
