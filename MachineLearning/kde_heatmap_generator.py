@@ -1,56 +1,123 @@
 import numpy as np
-from sklearn.neighbors import KernelDensity
-from sklearn.cluster import DBSCAN
+import pandas as pd
+import openpyxl
+import csv
+import io
 import json
 import logging
+from sklearn.neighbors import KernelDensity
+from sklearn.cluster import DBSCAN
 
 logging.basicConfig(level=logging.INFO)
 
-# Dummy dataset: Lat, Lng arrays of historical "Incidents"
-crime_data = np.array([
-    [28.6189, 77.2170], [28.6180, 77.2180], [28.6195, 77.2165], # Cluster 1
-    [28.6039, 77.2040], [28.6045, 77.2035], [28.6030, 77.2050], # Cluster 2
-    [28.6300, 77.2200]  # Outlier
-])
+def process_excel(filename):
+    logging.info(f"Processing Excel data from {filename}...")
+    try:
+        wb = openpyxl.load_workbook(filename)
+        sheet = wb.active
+        rows = [r[0] for r in sheet.iter_rows(values_only=True) if r[0]]
+        
+        final_data = []
+        current_header = None
+        
+        for line in rows:
+            if 'type,' in line or 'lat,lng' in line:
+                current_header = [h.strip() for h in line.split(',')]
+                continue
+                
+            if current_header:
+                f = io.StringIO(line)
+                reader = csv.reader(f)
+                try:
+                    values = next(reader)
+                    item = {}
+                    for i, val in enumerate(values):
+                        if i < len(current_header):
+                            key = current_header[i] if current_header[i] else f"field_{i}"
+                            item[key] = val
+                    final_data.append(item)
+                except: continue
+        return final_data
+    except Exception as e:
+        logging.error(f"Failed to process excel: {e}")
+        return []
 
-def generate_danger_zones():
-    logging.info("Starting KDE (Kernel Density Estimation) for Heatmap generation...")
-    # 1. KDE Mapping: Convert points to continuous probability density
-    # Haversine metric ensures accurate geospatial distance calculations on a sphere
-    kde = KernelDensity(kernel='gaussian', bandwidth=0.005, metric='haversine')
-    # Convert lat/long to radians for haversine
-    kde.fit(np.radians(crime_data))
+def generate_safety_data():
+    raw_data = process_excel('maharashtra_crime_data.xlsx')
+    if not raw_data: return
+
+    # Categorize data
+    categorized = {
+        "police_stations": [],
+        "hospitals": [],
+        "danger_zones": [],
+        "metro_stations": [],
+        "black_spots": [],
+        "tactical_units": [],
+        "safe_zones": []
+    }
+
+    crime_coords = []
     
-    # 2. DBSCAN Clustering: Draw discrete physical boundaries (GeoJSON red zones)
-    # eps=0.015 (~1.5km), min_samples=3 means at least 3 incidents inside to call it a "Danger Zone"
-    logging.info("Clustering high-density crime hot-spots via DBSCAN...")
-    scanner = DBSCAN(eps=0.015, min_samples=2, metric='haversine')
-    labels = scanner.fit_predict(np.radians(crime_data))
+    for item in raw_data:
+        try:
+            item_type = item.get('type')
+            lat = float(item.get('lat', 0))
+            lng = float(item.get('lng', 0))
+            if lat == 0 or lng == 0: continue
+            
+            clean_item = {
+                "name": item.get('name', 'Unknown'),
+                "lat": lat,
+                "lng": lng,
+                "description": item.get('description', ''),
+                "contact": item.get('contact', item.get('phone', ''))
+            }
+
+            if item_type == 'police_station':
+                categorized["police_stations"].append(clean_item)
+            elif item_type == 'hospital':
+                categorized["hospitals"].append(clean_item)
+            elif item_type == 'metro_station':
+                categorized["metro_stations"].append(clean_item)
+            elif item_type == 'black_spot':
+                categorized["black_spots"].append(clean_item)
+                crime_coords.append([lat, lng])
+            elif item_type == 'tactical_unit':
+                categorized["tactical_units"].append(clean_item)
+            elif item_type == 'nmc_zone':
+                risk = item.get('risk_level', '').lower()
+                clean_item["risk"] = risk
+                if risk in ['high', 'critical', 'elevated']:
+                    crime_coords.append([lat, lng])
+                else: # Low/Safe
+                    categorized["safe_zones"].append(clean_item)
+        except: continue
+
+    # KDE & DBSCAN for Danger Zones (Heatmap)
+    if crime_coords:
+        logging.info("Generating Danger Zones cluster via KDE/DBSCAN...")
+        crime_array = np.array(crime_coords)
+        scanner = DBSCAN(eps=0.015, min_samples=2, metric='haversine')
+        labels = scanner.fit_predict(np.radians(crime_array))
+        
+        unique_labels = set(labels)
+        for k in unique_labels:
+            if k == -1: continue
+            xy = crime_array[labels == k]
+            centroid = np.mean(xy, axis=0)
+            categorized["danger_zones"].append({
+                "center": [centroid[0], centroid[1]],
+                "radius": 800 if len(xy) > 5 else 500,
+                "severity": "Critical" if len(xy) > 3 else "High",
+                "incidents": len(xy)
+            })
+
+    # Save to Server folder
+    with open('../Server/safety_data.json', 'w') as f:
+        json.dump(categorized, f, indent=4)
     
-    zones = []
-    unique_labels = set(labels)
-    for k in unique_labels:
-        if k == -1:
-            continue # noise
-        class_member_mask = (labels == k)
-        xy = crime_data[class_member_mask]
-        
-        # Calculate centroid of cluster to be the visual center of Danger Zone
-        centroid = np.mean(xy, axis=0)
-        
-        # Output geometry
-        zones.append({
-            "center": [centroid[0], centroid[1]],
-            "radius": 600,  # Approximate 600m radius
-            "severity": "High",
-            "incidents": len(xy)
-        })
-        
-    # Output to our Backend Node API file
-    with open('../Server/danger_zones.json', 'w') as f:
-        json.dump(zones, f, indent=4)
-        
-    logging.info(f"Successfully generated {len(zones)} Danger Zones to ../Server/danger_zones.json")
+    logging.info(f"Successfully processed {len(raw_data)} items and saved to ../Server/safety_data.json")
 
 if __name__ == "__main__":
-    generate_danger_zones()
+    generate_safety_data()
