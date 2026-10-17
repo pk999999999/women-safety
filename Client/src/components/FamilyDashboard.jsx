@@ -28,13 +28,13 @@ export default function FamilyDashboard() {
   const firstUserLoc = totalTracked > 0 ? Object.values(trackedUsers)[0] : { lat: 28.6139, lng: 77.2090 };
 
   return (
-    <div className="app-container dashboard-layout" style={{ background: '#0B0F19' }}>
+    <div className="app-container dashboard-layout nested-dash">
       
       <aside className="sidebar">
         <h2 className="gradient-text" style={{ fontSize: '1.6rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <ShieldCheck /> Family Tracking Portal
         </h2>
-        <p style={{ color: '#94A3B8', fontSize: '0.9rem' }}>Live WebSockets Feed securely connected.</p>
+        <p style={{ color: '#94A3B8', fontSize: '0.9rem' }}>Live feed for people you choose. Do not post this link publicly.</p>
 
         <div className="card glass">
           <h3><HeartPulse size={20} color="#10B981" /> Active Travelers</h3>
