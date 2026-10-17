@@ -20,15 +20,52 @@ logger.info("Loading Whisper 'base' model (first run downloads ~150MB)...")
 model = whisper.load_model("base")
 logger.info("✅ Whisper model loaded successfully!")
 
-# ── Distress keywords (Hindi + English) ──
+# ── Distress keywords: English + Hindi (Roman + Devanagari) + Marathi (Roman + Devanagari) ──
 DISTRESS_KEYWORDS = [
-    # English
+    # ── English (20+) ──
     "help", "help me", "save me", "stop", "leave me", "let me go",
     "please stop", "don't touch", "somebody help", "emergency",
-    # Hindi / Hinglish
-    "bachao", "bachao mujhe", "chhodo", "chhod do", "ruko",
-    "mat karo", "dur raho", "police", "koi bachao", "madad",
-    "madad karo", "jane do", "hatiye", "shaamaat"
+    "call police", "i am scared", "please help", "he is following",
+    "following me", "kidnap", "attack", "assault", "rape", "molest",
+    "harass", "stalking", "get away", "stay away", "police",
+    "leave me alone", "stop it", "get off me", "i need help",
+
+    # ── Hindi Romanized (20+) ──
+    "bachao", "bachao mujhe", "mujhe bachao", "chhodo", "chhod do",
+    "ruko", "mat karo", "dur raho", "police bulao", "koi bachao",
+    "madad", "madad karo", "jane do", "hatiye", "hato",
+    "koi hai", "koi madad karo", "peecha kar raha", "maar raha",
+    "pakad liya", "mujhe chhoddo", "mujhe mat chuo", "help karo",
+    "kya kar rahe ho", "mujhe jane do", "peeche pad gaya",
+
+    # ── Hindi Devanagari (30+) — what Sarvam AI / Whisper actually returns ──
+    "बचाओ", "मुझे बचाओ", "मदद", "मदद करो", "छोड़ो", "छोड़ दो",
+    "रुको", "मत करो", "दूर रहो", "पुलिस बुलाओ", "कोई बचाओ",
+    "कोई मदद करो", "जाने दो", "हटिये", "हटो", "कोई है",
+    "पीछा कर रहा", "मार रहा", "पकड़ लिया", "हेल्प करो",
+    "मुझे छोड़ दो", "मुझे मत छुओ", "क्या कर रहे हो",
+    "मुझे जाने दो", "पीछे पड़ गया", "हेल्प", "बचाओ कोई",
+    "मदद चाहिए", "बचाओ मुझे", "पुलिस", "कोई तो आओ",
+    "मुझे बचा लो", "मार डालेगा", "मार रहा है", "पकड़ लिया है",
+    "छोड़ दे", "हट जा", "हट जाओ", "दूर हट", "दूर हटो",
+    "कोई सुनो", "कोई आओ", "बचा लो", "सहायता", "मदद कीजिए",
+
+    # ── Marathi Romanized (20+) ──
+    "vachva", "mala vachva", "madad kara", "madat kara", "sodha",
+    "mala sodha", "naka karu", "polees bolva", "polees bolava",
+    "koni ahe ka", "sahayya kara", "thamba", "paathlag karto",
+    "bhiti vatay", "mala dhara", "madad havi", "mala jaau dya",
+    "dur raha", "koni tari ya", "mala sparsh karu naka",
+    "mala madat kara", "sagla theek nahi",
+
+    # ── Marathi Devanagari (20+) — what Sarvam AI / Whisper actually returns ──
+    "वाचवा", "मला वाचवा", "मदत करा", "सोडा", "मला सोडा",
+    "नका करू", "पोलीस बोलवा", "कोणी आहे का", "सहाय्य करा",
+    "थांबा", "पाठलाग करतो", "भीती वाटतय", "मला धरा",
+    "मदत हवी", "मला जाऊ द्या", "दूर राहा", "कोणी तरी या",
+    "मला स्पर्श करू नका", "मला मदत करा", "सगळं ठीक नाही",
+    "पोलीस", "मदत", "वाचवा मला", "सोड", "सोडा मला",
+    "कोणी या", "मला मारतोय", "मला पकडलं", "सोड दे",
 ]
 
 app = FastAPI(title="Sakhi-Sahayak Whisper AI", version="2.0.0")
@@ -81,9 +118,13 @@ async def transcribe_audio(audio: UploadFile = File(...)):
 
         logger.info(f"Transcript: '{transcript}' (Language: {language})")
 
-        # Check for distress keywords
-        transcript_lower = transcript.lower()
-        keywords_found = [kw for kw in DISTRESS_KEYWORDS if kw in transcript_lower]
+        # Check for distress keywords (normalize both sides — strip punctuation)
+        import re
+        def normalize(text):
+            return re.sub(r'[!?.,\'"\\-_।॥()\[\]{}]', ' ', text.lower()).strip()
+
+        normalized_transcript = normalize(transcript)
+        keywords_found = [kw for kw in DISTRESS_KEYWORDS if normalize(kw) in normalized_transcript]
         distress_detected = len(keywords_found) > 0
 
         if distress_detected:
